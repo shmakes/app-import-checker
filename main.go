@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	flag "github.com/ogier/pflag"
 	"io/ioutil"
 	"net/http"
 	"os"
+    "strings"
 )
 
 type AppData struct {
@@ -88,29 +90,62 @@ func main() {
 		printUsage()
 	}
 
-	apps := getApps()
-	for _, a := range apps {
-		appDate := a.Submitted[:10]
-		appTime := a.Submitted[11:16]
-		appName := a.LastName
-		appEmail := a.Email
-		appIpAddr := a.IpAddress
-		fmt.Println(appDate, appTime, appName, appEmail, appIpAddr)
-	}
-
-    fmt.Println()
-	fmt.Println("======================================")
-    fmt.Println()
+	var m map[string]int
+	m = make(map[string]int)
+	var revKeyBuf bytes.Buffer
 
 	reviews := getReviews()
 	for _, r := range reviews.Rows {
 		revDate := r.Key[0][:10]
-		revTime := r.Key[0][11:16]
-		revName := r.Key[1]
-		revEmail := r.Value[0]
-		revIpAddr := r.Value[1]
+		revTime := r.Key[0][11:15]
+		revName := strings.ToLower(strings.TrimSpace(r.Key[1]))
+		revEmail := strings.ToLower(strings.TrimSpace(r.Value[0]))
+	    revIpAddr := strings.ToLower(strings.TrimSpace(r.Value[1]))
 		fmt.Println(revDate, revTime, revName, revEmail, revIpAddr)
+		revKeyBuf.WriteString(revDate)
+		//revKeyBuf.WriteString(revTime)
+		//revKeyBuf.WriteString(revName)
+		//revKeyBuf.WriteString(revEmail)
+		//revKeyBuf.WriteString(revIpAddr)
+		m[revKeyBuf.String()] = 1
+		//fmt.Println(revKeyBuf.String())
+		revKeyBuf.Reset()
 	}
+
+	fmt.Println()
+	fmt.Println("======================================")
+	fmt.Println()
+
+	var appKeyBuf bytes.Buffer
+	cnt := 0
+	apps := getApps()
+	for _, a := range apps {
+		appDate := a.Submitted[:10]
+		appTime := a.Submitted[11:15]
+        appName := strings.ToLower(strings.TrimSpace(a.LastName))
+		appEmail := strings.ToLower(strings.TrimSpace(a.Email))
+		appIpAddr := strings.ToLower(strings.TrimSpace(a.IpAddress))
+		fmt.Println(appDate, appTime, appName, appEmail, appIpAddr)
+		appKeyBuf.WriteString(appDate)
+		//appKeyBuf.WriteString(appTime)
+		//appKeyBuf.WriteString(appName)
+		//appKeyBuf.WriteString(appEmail)
+		//appKeyBuf.WriteString(appIpAddr)
+		_, ok := m[appKeyBuf.String()]
+		if !ok {
+			//fmt.Println(a.toString())
+			cnt++
+		}
+		appKeyBuf.Reset()
+	}
+
+	fmt.Println()
+	fmt.Println("======================================")
+	fmt.Println()
+
+	fmt.Println(fmt.Sprintf("There were %v reviews.", len(reviews.Rows)))
+	fmt.Println(fmt.Sprintf("There were %v applications.", len(apps)))
+	fmt.Println(fmt.Sprintf("There were %v missing reviews.", cnt))
 
 }
 
