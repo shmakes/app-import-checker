@@ -13,25 +13,25 @@ type AppData struct {
 	Submitted string `json:"Submitted"`
 	LastName  string `json:"Last-Name"`
 	Email     string `json:"from_email"`
-	IpAddr    string `json:"ip_address"`
+	IpAddress string `json:"ip_address"`
 }
 
-type Rows []struct {
+type Row struct {
 	Id    string   `json:"id"`
 	Key   []string `json:"key"`
 	Value []string `json:"value"`
 }
 
 type ReviewData struct {
-	TotalRows int `json:"total_rows"`
-	Rows      `json:"rows"`
+	TotalRows int   `json:"total_rows"`
+	Rows      []Row `json:"rows"`
 }
 
 func (appData AppData) toString() string {
 	return toJson(appData)
 }
 
-func (reviewData ReviewData) revToString() string {
+func (reviewData Row) toString() string {
 	return toJson(reviewData)
 }
 
@@ -58,7 +58,6 @@ func getApps() []AppData {
 }
 
 func getReviews() ReviewData {
-	fmt.Println("getting data")
 	rs, err := http.Get(dburl)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -71,9 +70,6 @@ func getReviews() ReviewData {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
-
-	//bodyString := string(bodyBytes)
-	//fmt.Println(bodyString)
 
 	var r ReviewData
 	json.Unmarshal(bodyBytes, &r)
@@ -94,12 +90,26 @@ func main() {
 
 	apps := getApps()
 	for _, a := range apps {
-		fmt.Println(a.toString())
+		appDate := a.Submitted[:10]
+		appTime := a.Submitted[11:16]
+		appName := a.LastName
+		appEmail := a.Email
+		appIpAddr := a.IpAddress
+		fmt.Println(appDate, appTime, appName, appEmail, appIpAddr)
 	}
+
+    fmt.Println()
+	fmt.Println("======================================")
+    fmt.Println()
 
 	reviews := getReviews()
 	for _, r := range reviews.Rows {
-		fmt.Println(r)
+		revDate := r.Key[0][:10]
+		revTime := r.Key[0][11:16]
+		revName := r.Key[1]
+		revEmail := r.Value[0]
+		revIpAddr := r.Value[1]
+		fmt.Println(revDate, revTime, revName, revEmail, revIpAddr)
 	}
 
 }
